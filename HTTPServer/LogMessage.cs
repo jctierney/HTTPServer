@@ -58,7 +58,7 @@ namespace HTTPServer
     }
 
     /// <summary>
-    /// Enum for the state of the log message.
+    /// Enumeration for the state of the log message.
     /// </summary>
     public enum State
     {
