@@ -191,7 +191,7 @@ namespace HTTPServer
             string requestedFile;
             string errorMessage;
             string localDir;
-            string root = "C:\\www\\"; // Default root directory.
+            string root = System.IO.Directory.GetCurrentDirectory() + "\\";
             string physicalFilePath = string.Empty;
             string formattedMessage = string.Empty;
             string response = string.Empty;
@@ -243,6 +243,8 @@ namespace HTTPServer
                     {
                         localDir = string.Empty;
                     }
+
+                    Console.WriteLine("Directory: " + localDir);
 
                     if (localDir.Length == 0)
                     {
