@@ -12,7 +12,6 @@ A simple HTTP server written in C#.
 - Doesn't allow accessing files outside of docroot directory
 
 ####Still needs to be implemented:
-- Date header
 - Last-Modified header
 - Ensure logging is thread safe
 - Handle docroot command line option
