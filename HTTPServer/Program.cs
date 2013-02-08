@@ -10,30 +10,173 @@ namespace HTTPServer
 {
     public class Program
     {
+        static int port = 8080;
+        static string logFile = "";
+        static string docRoot = "";
+
         /// <summary>
         /// Main entry point.
         /// </summary>
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
-            int port = 8080;
-            string logFile;
-
-            Console.WriteLine("What is the port: ");
-            if (!Int32.TryParse(Console.ReadLine(), out port))
+            if (args.Length == 0)
             {
                 port = 8080;
+                logFile = null;
+                docRoot = Directory.GetCurrentDirectory();
             }
 
-            Console.WriteLine("What is the log file: ");
-            logFile = Console.ReadLine();
-            if (string.IsNullOrEmpty(logFile))
+            if (args.Length == 2)
             {
-                HttpServer server = new HttpServer(8080);
+                switch (args[0])
+                {
+                    case "-docRoot":
+                        docRoot = args[1];
+                        break;
+                    case "-p":
+                        if (!Int32.TryParse(args[1], out port))
+                        {
+                            Console.WriteLine("Invalid port: {0}", port);
+                            Console.ReadKey();
+                            return;
+                        }
+                        break;
+                    case "-logFile":
+                        logFile = args[1];
+                        break;
+                }
+            }
+            else if (args.Length == 4)
+            {
+                switch (args[0])
+                {
+                    case "-docRoot":
+                        docRoot = args[1];
+                        break;
+                    case "-p":
+                        if (!Int32.TryParse(args[1], out port))
+                        {
+                            Console.WriteLine("Invalid port.");
+                            Console.ReadKey();
+                            return;
+                        }
+                        break;
+                    case "-logFile":
+                        logFile = args[1];
+                        break;
+                }
+
+                switch (args[2])
+                {
+                    case "-docRoot":
+                        docRoot = args[3];
+                        break;
+                    case "-p":
+                        if (!Int32.TryParse(args[3], out port))
+                        {
+                            Console.WriteLine("Invalid port.");
+                            Console.ReadKey();
+                            return;
+                        }
+                        break;
+                    case "-logFile":
+                        logFile = args[3];
+                        break;
+                }
+            }
+            else if (args.Length == 6)
+            {
+                switch (args[0])
+                {
+                    case "-docRoot":
+                        docRoot = args[1];
+                        break;
+                    case "-p":
+                        if (!Int32.TryParse(args[1], out port))
+                        {
+                            Console.WriteLine("Invalid port.");
+                            Console.ReadKey();
+                            return;
+                        }
+                        break;
+                    case "-logFile":
+                        logFile = args[1];
+                        break;
+                }
+
+                switch (args[2])
+                {
+                    case "-docRoot":
+                        docRoot = args[3];
+                        break;
+                    case "-p":
+                        if (!Int32.TryParse(args[3], out port))
+                        {
+                            Console.WriteLine("Invalid port.");
+                            Console.ReadKey();
+                            return;
+                        }
+                        break;
+                    case "-logFile":
+                        logFile = args[3];
+                        break;
+                }
+
+                switch (args[4])
+                {
+                    case "-docRoot":
+                        docRoot = args[5];
+                        break;
+                    case "-p":
+                        if (!Int32.TryParse(args[5], out port))
+                        {
+                            Console.WriteLine("Invalid port.");
+                            Console.ReadKey();
+                            return;
+                        }
+                        break;
+                    case "-logFile":
+                        logFile = args[5];
+                        break;
+                }
             }
             else
             {
-                HttpServer server = new HttpServer("log.txt", 8080);
+                Console.WriteLine("Incorrect number of arguments.");
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(logFile))
+            {
+                HttpServer server = new HttpServer(port);
+            }
+            else
+            {
+                HttpServer server = new HttpServer("log.txt", port);
+            }
+        }
+
+        private static void SetData(string field, string[] args)
+        {
+            switch (args[0])
+            {
+                case "-docRoot":
+                    docRoot = args[1];
+                    break;
+                case "-p":
+                    if (!Int32.TryParse(args[1], out port))
+                    {
+                        Console.WriteLine("Invalid port.");
+                        Console.ReadKey();
+                        return;
+                    }
+                    break;
+                case "-logFile":
+                    logFile = args[1];
+                    break;
             }
         }
     }

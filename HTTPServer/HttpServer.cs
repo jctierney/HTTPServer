@@ -43,6 +43,8 @@ namespace HTTPServer
         /// </summary>
         private Hashtable MimeTypes { get; set; }
 
+        private Hashtable Responses { get; set; }
+
         #region Constructors
         /// <summary>
         /// Initializes a new instance of the HttpServer class.
@@ -111,7 +113,7 @@ namespace HTTPServer
             MimeTypes.Add(".html", "text/html"); // HTML files
             MimeTypes.Add(".htm", "text/html"); // HTM files
             MimeTypes.Add(".bmp", "image/bmp"); // Bitmaps
-            MimeTypes.Add(".jpg", "image/jpg"); // JPEG
+            MimeTypes.Add(".jpg", "image/jpg"); // JPEG            
             try
             {
                 Listener = new TcpListener(IPAddress.Any, Port);
@@ -161,7 +163,7 @@ namespace HTTPServer
                     }
                     else
                     {
-                        LogInformation(new LogMessage(State.INFO, "Send bytes", "HttpServer.SendData"));
+                        LogInformation(new LogMessage(State.INFO, "Sending those bytes", "HttpServer.SendData"));
                     }
                 }
                 else
@@ -213,15 +215,12 @@ namespace HTTPServer
                         LogInformation(new LogMessage(State.ERROR, "Socket error. " + e.Message, "HttpServer.StartListen"));
                     }
 
-                    Console.WriteLine(receive.ToString());
                     string buffer = Encoding.ASCII.GetString(receive);
                     if (buffer.Substring(0, 3) != "GET")
                     {
-                        Console.WriteLine("Only GET supported... :(");
-                        Console.WriteLine("You sent:");
-                        Console.WriteLine(buffer.ToString());
+                        LogInformation(new LogMessage(State.ERROR, "Not in GET format... " + buffer.ToString(), "HttpServer.StartListen"));
                         socket.Close();
-                        return;
+                        continue;
                     }
 
                     startPos = buffer.IndexOf("HTTP", 1);
@@ -245,7 +244,6 @@ namespace HTTPServer
                         localDir = string.Empty;
                     }
 
-                    Console.WriteLine("Directory requested: " + localDir);
                     if (localDir.Length == 0)
                     {
                         errorMessage = "<H2>Error!! Requested directory does not exist...</H2><BR>";
@@ -320,27 +318,11 @@ namespace HTTPServer
             buffer = buffer + "Server: WQN1010\r\n";
             buffer = buffer + "Content-Type: " + mimeHeader + "\r\n";
             buffer = buffer + "Accept-Ranges: bytes\r\n";
+            DateTime time = DateTime.Now;
+            string format = "ddd, d MMM yyyy HH:mm:ss";
+            Console.WriteLine(time.ToString(format));
+            buffer = buffer + "Date: " + time.ToString(format) + "\r\n";
             buffer = buffer + "Content-Length: " + toBytes + "\r\n\r\n";
-            /*
-            // Using a StringBuilder to build our header.
-            // This could probably be cleaned up a bit.
-            StringBuilder bufferBuilder = new StringBuilder();
-            bufferBuilder.Append(httpVersion);
-            bufferBuilder.Append(statusCode);
-            bufferBuilder.AppendLine();
-            bufferBuilder.Append("Server: WQN1010");
-            bufferBuilder.AppendLine();
-            bufferBuilder.Append("Content-Type: ");
-            bufferBuilder.Append(mimeHeader);
-            bufferBuilder.AppendLine();
-            bufferBuilder.Append("Accept-Ranges: bytes");
-            bufferBuilder.AppendLine();
-            bufferBuilder.Append("Content-Length: ");
-            bufferBuilder.Append(toBytes);
-            bufferBuilder.AppendLine();
-            bufferBuilder.AppendLine();
-            buffer = bufferBuilder.ToString();
-            */
             byte[] data = Encoding.ASCII.GetBytes(buffer);
             SendData(data, ref socket);
         }
