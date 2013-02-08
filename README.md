@@ -19,6 +19,8 @@ A simple HTTP server written in C#.
 - Threading each individual request? (Not required, but it might help)
 
 ####Other features:
+These are features that we don't need to complete for the final product, but are instead  
+cool little novelty features we could have.  
 - Create a cache for storing the files in memory.
 - Configuration (INI) file for the HTTP server (it could load its default settings from this file)
 
