@@ -16,6 +16,11 @@ A simple HTTP server written in C#.
 - Ensure logging is thread safe
 - Handle docroot command line option
 - Look into persistent connections
+- Threading each individual request? (Not required, but it might help)
+
+####Other features:
+- Create a cache for storing the files in memory.
+- Configuration (INI) file for the HTTP server (it could load its default settings from this file)
 
 ###NOTE
 Currently the server defaults to C:\www\ as its root folder. You will need to create this folder if it doesn't already exist.
