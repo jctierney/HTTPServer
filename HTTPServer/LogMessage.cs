@@ -55,6 +55,22 @@ namespace HTTPServer
             Message = message;
             Method = method;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the LogMessage class with
+        /// specified values for Status, Header, Message, and Method.
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="header"></param>
+        /// <param name="message"></param>
+        /// <param name="method"></param>
+        public LogMessage(State status, string header, string message, string method)
+        {
+            Status = status;
+            Header = header;
+            Message = message;
+            Method = method;
+        }
     }
 
     /// <summary>

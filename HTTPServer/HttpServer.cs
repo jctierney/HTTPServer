@@ -260,7 +260,7 @@ namespace HTTPServer
                     {
                         if (string.IsNullOrEmpty(requestedFile))
                         {
-                            errorMessage = "<H2>Error, no default file name specified.</H2>";
+                            errorMessage = "404 Not Found";
                             SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
                             SendData(errorMessage, ref socket);
                             socket.Close();
@@ -272,7 +272,7 @@ namespace HTTPServer
                     physicalFilePath = localDir + requestedFile;
                     if (File.Exists(physicalFilePath) == false)
                     {
-                        errorMessage = "<H2>404 Error! File does not exist...</H2>";
+                        errorMessage = "404 Not Found";
                         SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
                         SendData(errorMessage, ref socket);
                     }
@@ -292,6 +292,7 @@ namespace HTTPServer
 
                         reader.Close();
                         stream.Close();
+                        errorMessage = "200 OK";
                         SendHeader(httpVersion, mimeType, toBytes, " 200 OK", ref socket);
                         SendData(bytes, ref socket);
                         socket.Close();
@@ -327,6 +328,14 @@ namespace HTTPServer
             buffer = buffer + "Content-Length: " + toBytes + "\r\n\r\n";
             byte[] data = Encoding.ASCII.GetBytes(buffer);
             SendData(data, ref socket);
+
+            // Set up and write a log message about the header we just sent.
+            LogMessage message = new LogMessage();
+            message.Message = "Sending header...";
+            message.Status = State.INFO;
+            message.Header = buffer;
+            message.Method = "HttpServer.SendHeader";
+            LogInformation(message);
         }
 
         /// <summary>
