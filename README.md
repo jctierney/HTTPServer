@@ -16,3 +16,6 @@ A simple HTTP server written in C#.
 - Ensure logging is thread safe
 - Handle docroot command line option
 - Look into persistent connections
+
+###NOTE
+Currently the server defaults to C:\www\ as its root folder. You will need to create this folder if it doesn't already exist.
