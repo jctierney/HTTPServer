@@ -281,6 +281,8 @@ namespace HTTPServer
                         int toBytes = 0;
                         response = string.Empty;
                         FileStream stream = new FileStream(physicalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        FileInfo fi = new FileInfo(physicalFilePath);
+                        DateTime lastWriteTime = fi.LastWriteTime;
                         BinaryReader reader = new BinaryReader(stream);
                         byte[] bytes = new byte[stream.Length];
                         int read;
@@ -302,14 +304,28 @@ namespace HTTPServer
         }
 
         /// <summary>
-        /// Sends the header to our TCPSocket.
+        /// Sends the header to our socket.
+        /// Calls the more complex SendHeader function which includes a lastWriteTime.
+        /// </summary>
+        /// <param name="httpVersion"></param>
+        /// <param name="mimeHeader"></param>
+        /// <param name="toBytes"></param>
+        /// <param name="statusCode"></param>
+        /// <param name="socket"></param>
+        private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket)
+        {
+            SendHeader(httpVersion, mimeHeader, toBytes, statusCode, ref socket, DateTime.Now);
+        }
+
+        /// <summary>
+        /// Sends the header to our socket.
         /// </summary>
         /// <param name="httpVersion">HTTP Version we are using</param>
         /// <param name="mimeHeader">Mime header</param>
         /// <param name="toBytes"></param>
         /// <param name="statusCode">Status code we are sending</param>
         /// <param name="socket">Socket to the receiver</param>
-        private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket)
+        private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket, DateTime lastWriteTime)
         {
             string buffer = string.Empty;
             if (mimeHeader.Length == 0)
@@ -325,6 +341,7 @@ namespace HTTPServer
             string format = "ddd, d MMM yyyy HH:mm:ss";
             Console.WriteLine(time.ToString(format));
             buffer = buffer + "Date: " + time.ToString(format) + "\r\n";
+            buffer = buffer + "Last-Modified: " + lastWriteTime.ToString(format) + "\r\n";
             buffer = buffer + "Content-Length: " + toBytes + "\r\n\r\n";
             byte[] data = Encoding.ASCII.GetBytes(buffer);
             SendData(data, ref socket);
@@ -356,7 +373,10 @@ namespace HTTPServer
             }
             else
             {
-                Console.WriteLine("Invalid MIME type: " + fileExt);
+                LogMessage message = new LogMessage();
+                message.Status = State.ERROR;
+                message.Message = "Unknown MIME type, or not supported.";
+                LogInformation(message);
             }
 
             return string.Empty;

@@ -10,9 +10,9 @@ namespace HTTPServer
 {
     public class Program
     {
-        static int port = 8080;
-        static string logFile = "";
-        static string docRoot = "";
+        private static int port = 8080;
+        private static string logFile = string.Empty;
+        private static string docRoot = string.Empty;
 
         /// <summary>
         /// Main entry point.
@@ -41,6 +41,7 @@ namespace HTTPServer
                             Console.ReadKey();
                             return;
                         }
+
                         break;
                     case "-logFile":
                         logFile = args[1];
@@ -61,6 +62,7 @@ namespace HTTPServer
                             Console.ReadKey();
                             return;
                         }
+
                         break;
                     case "-logFile":
                         logFile = args[1];
@@ -79,6 +81,7 @@ namespace HTTPServer
                             Console.ReadKey();
                             return;
                         }
+
                         break;
                     case "-logFile":
                         logFile = args[3];
@@ -99,6 +102,7 @@ namespace HTTPServer
                             Console.ReadKey();
                             return;
                         }
+
                         break;
                     case "-logFile":
                         logFile = args[1];
@@ -117,6 +121,7 @@ namespace HTTPServer
                             Console.ReadKey();
                             return;
                         }
+
                         break;
                     case "-logFile":
                         logFile = args[3];
@@ -135,6 +140,7 @@ namespace HTTPServer
                             Console.ReadKey();
                             return;
                         }
+
                         break;
                     case "-logFile":
                         logFile = args[5];
@@ -173,6 +179,7 @@ namespace HTTPServer
                         Console.ReadKey();
                         return;
                     }
+
                     break;
                 case "-logFile":
                     logFile = args[1];

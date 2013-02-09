@@ -38,8 +38,8 @@ namespace HTTPServer
         /// default values.
         /// </summary>
         public LogMessage()
+            : this(State.INFO, string.Empty, string.Empty)
         {
-            Status = State.INFO;
         }
 
         /// <summary>
@@ -50,10 +50,8 @@ namespace HTTPServer
         /// <param name="message"></param>
         /// <param name="method"></param>
         public LogMessage(State status, string message, string method)
-        {
-            Status = status;
-            Message = message;
-            Method = method;
+            : this(status, string.Empty, message, method)
+        {            
         }
 
         /// <summary>
