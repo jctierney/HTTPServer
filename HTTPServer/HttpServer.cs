@@ -26,7 +26,7 @@ namespace HTTPServer
         /// <summary>
         /// Log.
         /// </summary>
-        private Logger Log { get; set; }
+        public Logger Log { get; set; }
 
         /// <summary>
         /// Our listener.

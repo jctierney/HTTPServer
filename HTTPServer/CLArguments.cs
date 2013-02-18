@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 
 namespace HTTPServer
@@ -21,27 +22,51 @@ namespace HTTPServer
 		{
 	
 			// register the port flag
-			registerFlag("-p", delegate(ref HttpServer server, string value) {
+			registerFlag("p", delegate(ref HttpServer server, string value) {
 				int port = HttpServer.DEFAULT_PORT;
-				Int32.TryParse(value, out port);
-				server.Port = port;
+				bool successfulParse = Int32.TryParse(value, out port);
+				if (successfulParse)
+				{
+					server.Port = port;
+				}
+				else
+				{
+					throw new MalformedFlagException("-p expects numeric port, recieved: " + value);
+				}
 			});
 			  
 			// register the document root flag
-			registerFlag("-docroot", delegate(ref HttpServer server, string value) {
+			registerFlag("docroot", delegate(ref HttpServer server, string value) {
 				if(value != null && new Uri(value).IsWellFormedOriginalString())
 				{
 					server.Directory = value;
 				}
 				else 
 				{
-					// THROW EXCEPTION
-
+					throw new MalformedFlagException("-docroot expects a valid directory, recieved: " + value);
 				}
 			});
 
-
-					
+			// register the logfile flag
+			registerFlag ("logfile", delegate(ref HttpServer server, string value) {
+				if (value != null && new Uri(value).IsWellFormedOriginalString())
+				{
+					// logfile must point to a file, and the file must be in an existing directory
+					if (Directory.Exists(value) &&  
+					    value[value.Length-1] != Path.DirectorySeparatorChar)
+					{
+						server.Log = new Logger(value);
+					}
+					else 
+					{
+						// needs better error output
+						throw new MalformedFlagException("bad logfile flag input" + value);
+					}
+				}
+				
+			});
+			    
+			
 						
 			
 		}
@@ -54,11 +79,12 @@ namespace HTTPServer
 			{
 				Console.Error.WriteLine("Flag '" + flag + "' already exists, you're overriding it");
 			}
-			else
+			if (flag[0] == '-')
 			{
-				Flags.Add(flag, new CLFlag(flag, callback));
+				Console.Error.WriteLine("Attempting to register flag: " + flag + "with explicit preceding dash");
+				
 			}
-			
+			Flags.Add("-"+flag, new CLFlag(flag, callback));
 		}
 
 		/// <summary>
@@ -112,5 +138,26 @@ namespace HTTPServer
 			Callback = callback;
 		}
 	}
+
+	/// <summary>
+	/// Invalid flag exception.
+	/// </summary>
+	public class InvalidFlagException : System.Exception 
+	{
+		public InvalidFlagException(string message) : base(message)
+		{
+		}
+	}
+	/// <summary>
+	/// Malformed flag exception.
+	/// </summary>
+	public class MalformedFlagException : System.Exception
+	{
+		public MalformedFlagException(string message) : base(message)
+		{
+		}
+	}
+
+
 }
 
