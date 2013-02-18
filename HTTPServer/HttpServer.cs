@@ -16,7 +16,9 @@ namespace HTTPServer
         /// The default port. If no other port is given, our main
         /// port is assigned to this value.
         /// </summary>
-        public static int DEFAULT_PORT = 8080;
+        public static readonly int DEFAULT_PORT = 8080;
+		
+        
 
         /// <summary>
         /// The directory where requested files should come from.
