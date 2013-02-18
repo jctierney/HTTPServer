@@ -16,12 +16,12 @@ namespace HTTPServer
         /// The default port. If no other port is given, our main
         /// port is assigned to this value.
         /// </summary>
-        private const int DEFAULT_PORT = 8080;
+        public const int DEFAULT_PORT = 8080;
 
         /// <summary>
         /// The directory where requested files should come from.
         /// </summary>
-        private string Directory { get; set; }
+        public string Directory { get; set; }
 
         /// <summary>
         /// Log.
@@ -36,7 +36,7 @@ namespace HTTPServer
         /// <summary>
         /// Port number the server runs on.
         /// </summary>
-        private int Port { get; set; }
+        public int Port { get; set; }
 
         /// <summary>
         /// Our default MIME types we support.
