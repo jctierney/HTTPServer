@@ -44,6 +44,8 @@ namespace HTTPServer
 		/// <param name="args">arg list from Main.</param>
 		public void ParseFlags(ref HttpServer server, string[] args)
 		{
+			Dictionary<string, string> usedFlags = new Dictionary<string, string>();
+			
 			Queue<string> queue = new Queue<string>(args);
 			while(queue.Count > 0)
 			{
@@ -61,6 +63,13 @@ namespace HTTPServer
 					{
 						string next = queue.Dequeue();
 						Flags[current].Callback(ref server, next);
+						if (usedFlags.ContainsKey(current)) 
+						{
+							Console.WriteLine ("WARNING! flag: \""+current+"\" declared multiple times, "+
+							                   "happily overriding previous value of "+usedFlags[current]+" with "+next+".");
+							usedFlags.Remove(current);
+						}
+						usedFlags.Add(current, next);
 					}					
 				}
 				else
