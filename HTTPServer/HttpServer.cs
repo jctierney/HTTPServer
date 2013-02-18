@@ -16,7 +16,7 @@ namespace HTTPServer
         /// The default port. If no other port is given, our main
         /// port is assigned to this value.
         /// </summary>
-        public const int DEFAULT_PORT = 8080;
+        public static int DEFAULT_PORT = 8080;
 
         /// <summary>
         /// The directory where requested files should come from.
@@ -94,16 +94,16 @@ namespace HTTPServer
         {
             Port = port;
             Log = logger;
-            LogMessage message = new LogMessage(State.INFO, "New instance of logger.", "HttpServer()");
-            LogInformation(message);
-            Initialize();
+			//LogMessage message = new LogMessage(State.INFO, "New instance of logger.", "HttpServer()");
+			//LogInformation(message);
+			//Initialize();
         }
         #endregion
 
         /// <summary>
         /// Initializes and sets up the server.
         /// </summary>
-        private void Initialize()
+        public void Initialize()
         {
             LogMessage message = new LogMessage(State.INFO, "Initializing the server.", "HttpServer.Initialize()");
             LogInformation(message);
@@ -191,7 +191,12 @@ namespace HTTPServer
             string requestedFile;
             string errorMessage;
             string localDir;
-            string root = System.IO.Directory.GetCurrentDirectory() + "\\";
+            //string root = System.IO.Directory.GetCurrentDirectory() + "\\";
+            string root = this.Directory;
+			if (root[root.Length-1] != Path.DirectorySeparatorChar)
+			{
+				root = root + Path.DirectorySeparatorChar;
+			}
             string physicalFilePath = string.Empty;
             string formattedMessage = string.Empty;
             string response = string.Empty;

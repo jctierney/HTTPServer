@@ -4,10 +4,18 @@ using System.Collections.Generic;
 
 namespace HTTPServer
 {
-  
+	/// <summary>
+	/// Flag callback.
+	/// Function type called by <see cref="HTTPServer.CLArguments"/> class to modify a
+	/// given instance of a <see cref="HTTPServer.HttpServer"/>.
+	/// </summary>
+	/// <param name="server">The Server to modify during execution</param>
+	/// <param name="value">Value passed at the command line following the flag that
+	/// this callback is registered to.</param>
 	public delegate void FlagCallback(ref HttpServer server, string value);
-
-	public class CLArguments
+	
+	
+	public class FlagParser
 	{
 		/// <summary>
 		/// Command Line Flag List
@@ -16,11 +24,50 @@ namespace HTTPServer
 
 
 		/// <summary>
+		/// Initializes a new instance of the <see cref="HTTPServer.CLArguments"/> class
+		/// from command line arguments
+		/// </summary>
+		/// <param name="args">Arguments.</param>
+		public FlagParser()
+		{
+			Flags = new Dictionary<string, CLFlag>();
+			InitializeFlags();
+		}
+		
+		public void ParseFlags(ref HttpServer server, string[] args)
+		{
+			Queue<string> queue = new Queue<string>(args);
+			while(queue.Count > 0)
+			{
+				string current = queue.Dequeue();
+				if (Flags.ContainsKey(current))
+				{
+					/*Every flag expects a parameter, if there is no strings left to be the parameter
+					of if the next string is a flag, throw an exception 
+					*/						
+					if (queue.Count == 0 || Flags.ContainsKey(queue.Peek()))
+					{
+						throw new MalformedFlagException("Flag: \""+current+"\" expects an argument, recieved none");
+					}
+					else 
+					{
+						string next = queue.Dequeue();
+						Flags[current].Callback(ref server, next);
+					}					
+				}
+				else
+				{
+					throw new InvalidFlagException(current);
+				}
+			}
+			
+		}
+		/// <summary>
 		/// Create and register new flags
 		/// </summary>
 		private void InitializeFlags()
 		{
-	
+		
 			// register the port flag
 			registerFlag("p", delegate(ref HttpServer server, string value) {
 				int port = HttpServer.DEFAULT_PORT;
@@ -31,37 +78,37 @@ namespace HTTPServer
 				}
 				else
 				{
-					throw new MalformedFlagException("-p expects numeric port, recieved: " + value);
+					throw new MalformedFlagException("\"-p\" expects numeric port, recieved: " + value+".");
 				}
 			});
 			  
 			// register the document root flag
 			registerFlag("docroot", delegate(ref HttpServer server, string value) {
-				if(value != null && new Uri(value).IsWellFormedOriginalString())
+				if(value != null &&
+				   Directory.Exists(value))
 				{
 					server.Directory = value;
 				}
 				else 
 				{
-					throw new MalformedFlagException("-docroot expects a valid directory, recieved: " + value);
+					throw new MalformedFlagException("\"-docroot\" expects a valid directory, recieved: " + value+".");
 				}
 			});
 
 			// register the logfile flag
 			registerFlag ("logfile", delegate(ref HttpServer server, string value) {
-				if (value != null && new Uri(value).IsWellFormedOriginalString())
+				// logfile must not to a filename inside a existing directory, file does not 
+				// need to exist.
+				if(value != null &&
+				   Directory.Exists(Path.GetDirectoryName(value)) &&
+				   Path.GetFileName(value) != "")
 				{
-					// logfile must point to a file, and the file must be in an existing directory
-					if (Directory.Exists(value) &&  
-					    value[value.Length-1] != Path.DirectorySeparatorChar)
-					{
-						server.Log = new Logger(value);
-					}
-					else 
-					{
-						// needs better error output
-						throw new MalformedFlagException("bad logfile flag input" + value);
-					}
+					server.Log = new Logger(value);
+				} 
+				else
+				{
+					throw new MalformedFlagException("\"-logfile\" expects a path to a file in an existing directory, "+
+					                                 "received: "+value);
 				}
 				
 			});
@@ -86,17 +133,7 @@ namespace HTTPServer
 			}
 			Flags.Add("-"+flag, new CLFlag(flag, callback));
 		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="HTTPServer.CLArguments"/> class
-		/// from command line arguments
-		/// </summary>
-		/// <param name="args">Arguments.</param>
-		public CLArguments(string[] args)
-		{
-				Flags = new Dictionary<string, CLFlag>();
-		}
-
+	
 	}
 
 	/// <summary>
@@ -144,7 +181,8 @@ namespace HTTPServer
 	/// </summary>
 	public class InvalidFlagException : System.Exception 
 	{
-		public InvalidFlagException(string message) : base(message)
+		public InvalidFlagException(string flag) 
+			: base("Flag: "+flag+" is not a valid flag.")
 		{
 		}
 	}
