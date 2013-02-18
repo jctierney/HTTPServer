@@ -87,7 +87,7 @@ namespace HTTPServer
 				if(value != null &&
 				   Directory.Exists(value))
 				{
-					server.Directory = value;
+					server.RootDirectory = value;
 				}
 				else 
 				{
@@ -110,11 +110,7 @@ namespace HTTPServer
 					throw new MalformedFlagException("\"-logfile\" expects a path to a file in an existing directory, "+
 					                                 "received: "+value);
 				}
-				
 			});
-			    
-			
-						
 			
 		}
 
@@ -123,14 +119,9 @@ namespace HTTPServer
 		/// </summary>
 		private void registerFlag(string flag, FlagCallback callback) {
 			if (Flags.ContainsKey(flag))
-			{
 				Console.Error.WriteLine("Flag '" + flag + "' already exists, you're overriding it");
-			}
 			if (flag[0] == '-')
-			{
 				Console.Error.WriteLine("Attempting to register flag: " + flag + "with explicit preceding dash");
-				
-			}
 			Flags.Add("-"+flag, new CLFlag(flag, callback));
 		}
 	
@@ -149,9 +140,7 @@ namespace HTTPServer
 		{
 			get;
 			private set;
-
 		}
-
 
 		/// <summary>
 		/// Gets the callback.
@@ -162,7 +151,6 @@ namespace HTTPServer
 			get;
 			private set;
 		}
-
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="HTTPServer.CLFlag"/> class.

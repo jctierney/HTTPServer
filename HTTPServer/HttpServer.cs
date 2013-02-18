@@ -18,12 +18,12 @@ namespace HTTPServer
         /// </summary>
         public static readonly int DEFAULT_PORT = 8080;
 		
-        
+        public static readonly string DEFAULT_DIRECTORY = Directory.GetCurrentDirectory();
 
         /// <summary>
         /// The directory where requested files should come from.
         /// </summary>
-        public string Directory { get; set; }
+        public string RootDirectory { get; set; }
 
         /// <summary>
         /// Log.
@@ -94,7 +94,8 @@ namespace HTTPServer
         /// <param name="logger"></param>
         public HttpServer(Logger logger, int port)
         {
-            Port = port;
+			RootDirectory = DEFAULT_DIRECTORY;
+			Port = port;
             Log = logger;
 			//LogMessage message = new LogMessage(State.INFO, "New instance of logger.", "HttpServer()");
 			//LogInformation(message);
@@ -109,7 +110,10 @@ namespace HTTPServer
         {
             LogMessage message = new LogMessage(State.INFO, "Initializing the server.", "HttpServer.Initialize()");
             LogInformation(message);
-
+			Console.WriteLine("Attempting to start Server..."+
+			                  "\n\tPort:\t\t"+Port+
+			                  "\n\tLogfile:\t"+Log.Location+
+			                  "\n\tRoot:\t\t"+RootDirectory);
             // Create our MIME types Hashtable.
             MimeTypes = new Hashtable();
             MimeTypes.Add(".html", "text/html"); // HTML files
@@ -194,7 +198,7 @@ namespace HTTPServer
             string errorMessage;
             string localDir;
             //string root = System.IO.Directory.GetCurrentDirectory() + "\\";
-            string root = this.Directory;
+            string root = this.RootDirectory;
 			if (root[root.Length-1] != Path.DirectorySeparatorChar)
 			{
 				root = root + Path.DirectorySeparatorChar;
