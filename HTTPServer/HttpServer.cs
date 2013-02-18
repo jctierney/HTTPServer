@@ -191,7 +191,7 @@ namespace HTTPServer
             string requestedFile;
             string errorMessage;
             string localDir;
-            string root = "C:\\www\\"; // Default root directory.
+            string root = System.IO.Directory.GetCurrentDirectory() + "\\";
             string physicalFilePath = string.Empty;
             string formattedMessage = string.Empty;
             string response = string.Empty;
@@ -244,6 +244,8 @@ namespace HTTPServer
                         localDir = string.Empty;
                     }
 
+                    Console.WriteLine("Directory: " + localDir);
+
                     if (localDir.Length == 0)
                     {
                         errorMessage = "<H2>Error!! Requested directory does not exist...</H2><BR>";
@@ -258,7 +260,7 @@ namespace HTTPServer
                     {
                         if (string.IsNullOrEmpty(requestedFile))
                         {
-                            errorMessage = "<H2>Error, no default file name specified.</H2>";
+                            errorMessage = "404 Not Found";
                             SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
                             SendData(errorMessage, ref socket);
                             socket.Close();
@@ -270,7 +272,7 @@ namespace HTTPServer
                     physicalFilePath = localDir + requestedFile;
                     if (File.Exists(physicalFilePath) == false)
                     {
-                        errorMessage = "<H2>404 Error! File does not exist...</H2>";
+                        errorMessage = "404 Not Found";
                         SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
                         SendData(errorMessage, ref socket);
                     }
@@ -279,6 +281,8 @@ namespace HTTPServer
                         int toBytes = 0;
                         response = string.Empty;
                         FileStream stream = new FileStream(physicalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        FileInfo fi = new FileInfo(physicalFilePath);
+                        DateTime lastWriteTime = fi.LastWriteTime;
                         BinaryReader reader = new BinaryReader(stream);
                         byte[] bytes = new byte[stream.Length];
                         int read;
@@ -290,6 +294,7 @@ namespace HTTPServer
 
                         reader.Close();
                         stream.Close();
+                        errorMessage = "200 OK";
                         SendHeader(httpVersion, mimeType, toBytes, " 200 OK", ref socket);
                         SendData(bytes, ref socket);
                         socket.Close();
@@ -299,14 +304,28 @@ namespace HTTPServer
         }
 
         /// <summary>
-        /// Sends the header to our TCPSocket.
+        /// Sends the header to our socket.
+        /// Calls the more complex SendHeader function which includes a lastWriteTime.
+        /// </summary>
+        /// <param name="httpVersion"></param>
+        /// <param name="mimeHeader"></param>
+        /// <param name="toBytes"></param>
+        /// <param name="statusCode"></param>
+        /// <param name="socket"></param>
+        private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket)
+        {
+            SendHeader(httpVersion, mimeHeader, toBytes, statusCode, ref socket, DateTime.Now);
+        }
+
+        /// <summary>
+        /// Sends the header to our socket.
         /// </summary>
         /// <param name="httpVersion">HTTP Version we are using</param>
         /// <param name="mimeHeader">Mime header</param>
         /// <param name="toBytes"></param>
         /// <param name="statusCode">Status code we are sending</param>
         /// <param name="socket">Socket to the receiver</param>
-        private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket)
+        private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket, DateTime lastWriteTime)
         {
             string buffer = string.Empty;
             if (mimeHeader.Length == 0)
@@ -322,9 +341,18 @@ namespace HTTPServer
             string format = "ddd, d MMM yyyy HH:mm:ss";
             Console.WriteLine(time.ToString(format));
             buffer = buffer + "Date: " + time.ToString(format) + "\r\n";
+            buffer = buffer + "Last-Modified: " + lastWriteTime.ToString(format) + "\r\n";
             buffer = buffer + "Content-Length: " + toBytes + "\r\n\r\n";
             byte[] data = Encoding.ASCII.GetBytes(buffer);
             SendData(data, ref socket);
+
+            // Set up and write a log message about the header we just sent.
+            LogMessage message = new LogMessage();
+            message.Message = "Sending header...";
+            message.Status = State.INFO;
+            message.Header = buffer;
+            message.Method = "HttpServer.SendHeader";
+            LogInformation(message);
         }
 
         /// <summary>
@@ -345,7 +373,10 @@ namespace HTTPServer
             }
             else
             {
-                Console.WriteLine("Invalid MIME type: " + fileExt);
+                LogMessage message = new LogMessage();
+                message.Status = State.ERROR;
+                message.Message = "Unknown MIME type, or not supported.";
+                LogInformation(message);
             }
 
             return string.Empty;

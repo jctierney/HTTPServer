@@ -38,8 +38,8 @@ namespace HTTPServer
         /// default values.
         /// </summary>
         public LogMessage()
+            : this(State.INFO, string.Empty, string.Empty)
         {
-            Status = State.INFO;
         }
 
         /// <summary>
@@ -50,8 +50,22 @@ namespace HTTPServer
         /// <param name="message"></param>
         /// <param name="method"></param>
         public LogMessage(State status, string message, string method)
+            : this(status, string.Empty, message, method)
+        {            
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the LogMessage class with
+        /// specified values for Status, Header, Message, and Method.
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="header"></param>
+        /// <param name="message"></param>
+        /// <param name="method"></param>
+        public LogMessage(State status, string header, string message, string method)
         {
             Status = status;
+            Header = header;
             Message = message;
             Method = method;
         }
