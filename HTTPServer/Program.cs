@@ -24,14 +24,14 @@ namespace HTTPServer
 			try
 			{
 				parser.ParseFlags(ref server, args);
+				server.Initialize();
 			} 
 			catch (Exception e)
 			{
 				Console.WriteLine("ERROR\n\t"+e.Message);
 			}
 			
-			// start the server
-			server.Initialize();
+			
         }
 
         

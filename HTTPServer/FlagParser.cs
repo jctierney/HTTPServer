@@ -14,7 +14,10 @@ namespace HTTPServer
 	/// this callback is registered to.</param>
 	public delegate void FlagCallback(ref HttpServer server, string value);
 	
-	
+	/// <summary>
+	/// Flag parser.
+	/// Modifies an HttpServer based on callbacks bound to command line flags
+	/// </summary>
 	public class FlagParser
 	{
 		/// <summary>
@@ -34,6 +37,11 @@ namespace HTTPServer
 			InitializeFlags();
 		}
 		
+		/// <summary>
+		/// Parses the flags.
+		/// </summary>
+		/// <param name="server">Reference to Server to be modified by args.</param>
+		/// <param name="args">arg list from Main.</param>
 		public void ParseFlags(ref HttpServer server, string[] args)
 		{
 			Queue<string> queue = new Queue<string>(args);
@@ -60,8 +68,8 @@ namespace HTTPServer
 					throw new InvalidFlagException(current);
 				}
 			}
-			
 		}
+		
 		/// <summary>
 		/// Create and register new flags
 		/// </summary>

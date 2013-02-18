@@ -272,6 +272,7 @@ namespace HTTPServer
                         if (string.IsNullOrEmpty(requestedFile))
                         {
                             errorMessage = "404 Not Found";
+							
                             SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
                             SendData(errorMessage, ref socket);
                             socket.Close();
@@ -284,7 +285,11 @@ namespace HTTPServer
                     if (File.Exists(physicalFilePath) == false)
                     {
                         errorMessage = "404 Not Found";
-                        SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
+						if(File.Exists(RootDirectory+"404.html")) 
+						{
+							errorMessage = File.ReadAllText(RootDirectory+"404.html");
+						}
+						SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
                         SendData(errorMessage, ref socket);
                     }
                     else
