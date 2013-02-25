@@ -119,7 +119,8 @@ namespace HTTPServer
             MimeTypes.Add(".html", "text/html"); // HTML files
             MimeTypes.Add(".htm", "text/html"); // HTM files
             MimeTypes.Add(".bmp", "image/bmp"); // Bitmaps
-            MimeTypes.Add(".jpg", "image/jpg"); // JPEG            
+            MimeTypes.Add(".jpg", "image/jpg"); // JPEG      
+            MimeTypes.Add(".pdf", "application/pdf");
             try
             {
                 Listener = new TcpListener(IPAddress.Any, Port);
