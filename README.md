@@ -16,7 +16,7 @@ A simple HTTP server written in C#.
 - Ensure logging is thread safe
 - ~~Handle docroot command line option~~
 - Look into persistent connections
-- ~~Threading each individual request? (Multiple threads)
+- ~~Threading each individual request? (Multiple threads)~~
 
 ####Other features:
 These are features that we don't need to complete for the final product, but are instead  
