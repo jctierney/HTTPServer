@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Collections.Concurrent;
 
 namespace HTTPServer
 {
@@ -22,15 +21,13 @@ namespace HTTPServer
         /// The location of the file represented as a string.
         /// </summary>
         public string Location { get; set; }
+
+        private readonly object lockObj = new object();
         
         /// <summary>
         /// Determines whether or not we should write to the log file.
         /// </summary>
         private bool WriteToLog { get; set; }
-        
-        private Thread writeThread;
-        
-        private ConcurrentQueue<LogMessage> messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the Logger class.
@@ -51,12 +48,6 @@ namespace HTTPServer
             Location = location;
             WriteToLog = true;
             Console.WriteLine("Logger(string location)");
-			messageQueue = new ConcurrentQueue<LogMessage>();
-            writeThread = new Thread(logThreadCallback);
-			if( ! File.Exists(Location)) {
-				File.Create(Location);
-			}
-            writeThread.Start();
         }
 
         /// <summary>
@@ -65,39 +56,54 @@ namespace HTTPServer
         /// <param name="message">The LogMessage</param>
         public void AppendToLogFile(LogMessage message)
         {
-			messageQueue.Enqueue(message);
+            if (WriteToLog)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine();
+                sb.Append(DateTime.Now.ToString());
+                sb.Append(",");
+                sb.Append(message.Status);
+                sb.Append(",");
+                sb.Append("Header: ");
+                sb.Append(message.Header);
+                sb.Append(",");
+                sb.Append(message.Message);
+                sb.Append(",");
+                sb.Append(message.Method);
+                sb.AppendLine();
+                sb.AppendLine();
+
+                //do
+                //{
+                //    Thread.Sleep(1000);
+                //} while (CheckIfLogIsBeingUsed(Location));
+
+                // Append our message to the log.
+                lock (lockObj)
+                {                    
+                    File.AppendAllText(Location, sb.ToString());
+                    Thread.Sleep(100);
+                }
+            }                        
         }
-        
-        public void logThreadCallback()
+
+        /// <summary>
+        /// Checks to see if the log file is currently in use.
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        private bool CheckIfLogIsBeingUsed(string filename)
         {
-			while (true) 
-			{
-				LogMessage message = null;
-				if (messageQueue.Any() && messageQueue.TryDequeue(out message)) {
-					if (!WriteToLog) continue;
-					
-					
-					if (WriteToLog)
-					{
-						StringBuilder sb = new StringBuilder();
-						sb.AppendLine();
-						sb.Append(DateTime.Now.ToString());
-						sb.Append(",");
-						sb.Append(message.Status);
-						sb.Append(",");
-					sb.Append("Header: \t");
-						sb.Append(message.Header);
-						sb.Append(",");
-						sb.Append(message.Message);
-						sb.Append(",");
-						sb.Append(message.Method);
-						// Append our message to the log.
-						File.AppendAllText(Location, sb.ToString());
-					}
-				} else {
-					Thread.Sleep(250);
-				}
-			}
+            try
+            {
+                File.Open(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (Exception exc)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

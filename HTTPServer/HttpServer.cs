@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -49,7 +50,7 @@ namespace HTTPServer
 
         #region Constructors
         /// <summary>
-        /// Initializes a new instance of the HttpServer class.
+        /// Initializes a new instance of the <see cref="HttpServer"/> class.
         /// No port / log file given.
         /// </summary>
         public HttpServer()
@@ -116,25 +117,20 @@ namespace HTTPServer
 			                  "\n\tRoot:\t\t"+RootDirectory);
             // Create our MIME types Hashtable.
             MimeTypes = new Hashtable();
-            MimeTypes.Add(".html", "text/html"); // HTML files
-            MimeTypes.Add(".htm", "text/html"); // HTM files
-            MimeTypes.Add(".bmp", "image/bmp"); // Bitmaps
-            MimeTypes.Add(".jpg", "image/jpg"); // JPEG      
-            MimeTypes.Add(".pdf", "application/pdf");
+            MimeTypes.Add(".html", "text/html");        // HTML files
+            MimeTypes.Add(".htm", "text/html");         // HTM files
+            MimeTypes.Add(".bmp", "image/bmp");         // Bitmaps
+            MimeTypes.Add(".jpg", "image/jpg");         // JPEGs
+            MimeTypes.Add(".pdf", "application/pdf");   // PDFs
             try
             {
                 Listener = new TcpListener(IPAddress.Any, Port);
                 Listener.Start();
                 Console.WriteLine("Server is running..." + Port);
 
+                // Creates a new main thread. Further threading is done within the StartListen function.
                 Thread thread = new Thread(new ThreadStart(StartListen));
-                Thread thread2 = new Thread(new ThreadStart(StartListen));
-                Thread thread3 = new Thread(new ThreadStart(StartListen));
-                Thread thread4 = new Thread(new ThreadStart(StartListen));
                 thread.Start();
-                thread2.Start();
-                thread3.Start();
-                thread4.Start();
             }
             catch (Exception e)
             {
@@ -196,23 +192,6 @@ namespace HTTPServer
         /// </summary>
         private void StartListen()
         {
-            int startPos = 0;
-            string request;
-            string dirName;
-            string requestedFile;
-            string errorMessage;
-            string localDir;
-            //string root = System.IO.Directory.GetCurrentDirectory() + "\\";
-            string root = this.RootDirectory;
-			if (root[root.Length-1] != Path.DirectorySeparatorChar)
-			{
-				root = root + Path.DirectorySeparatorChar;
-			}
-
-            string physicalFilePath = string.Empty;
-            string formattedMessage = string.Empty;
-            string response = string.Empty;
-
             // Keep it open, brah.
             while (true)
             {
@@ -221,121 +200,190 @@ namespace HTTPServer
                 LogInformation(new LogMessage(State.INFO, "Socket type: " + socket.SocketType, "HttpServer.StartListen"));
                 if (socket.Connected)
                 {
-                    byte[] receive = new byte[1024];
-                    int i = -1;
-                    try
-                    {
-                        i = socket.Receive(receive, receive.Length, 0);
-                    }
-                    catch (Exception e)
-                    {
-                        LogInformation(new LogMessage(State.ERROR, "Socket error. " + e.Message, "HttpServer.StartListen"));
-                    }
+                    Thread thread = new Thread(new ParameterizedThreadStart(Connection));
+                    thread.Start(socket); // Can your fancy Java do this?
+                }
+            }
+        }
 
-                    string buffer = Encoding.ASCII.GetString(receive);
-                    if (buffer.Substring(0, 3) != "GET")
-                    {
-                        LogInformation(new LogMessage(State.ERROR, "Not in GET format... " + buffer.ToString(), "HttpServer.StartListen"));
-                        socket.Close();
-                        continue;
-                    }
+        /// <summary>
+        /// Handles connections.
+        /// </summary>
+        /// <param name="aSocket"></param>
+        private void Connection(object aSocket)
+        {
+            Socket socket = aSocket as Socket;
+            int count = 0;
+            string physicalFilePath = string.Empty;
+            string formattedMessage = string.Empty;
+            string response = string.Empty;
+            int startPos = 0;
+            string request;
+            string dirName;
+            string requestedFile;
+            string errorMessage;
+            string localDir;
+            string buffer = string.Empty;
+            string root = this.RootDirectory;
 
+            while (count < 20)
+            {
+                if (!socket.Connected)
+                {
+                    Console.WriteLine("Disconnected...");
+                    return;
+                }
+            
+                if (root[root.Length - 1] != Path.DirectorySeparatorChar)
+                {
+                    root = root + Path.DirectorySeparatorChar;
+                }
+
+                byte[] receive = new byte[1024];
+                int i = -1;
+                
+                // Assign a timeout to make sure it doesn't take forever for the socket to connect.
+                socket.ReceiveTimeout = 2000;
+                try
+                {                                 
+                    i = socket.Receive(receive, receive.Length, 0);
+                    Console.WriteLine("Receiving...");
+                }
+                catch (Exception e)
+                {               
+                    //LogInformation(new LogMessage(State.ERROR, "Socket timeout. " + e.Message, "HttpServer.Connection"));
+                    //socket.Close();
+                    //return;
+                }
+
+                buffer = Encoding.ASCII.GetString(receive);
+                if (!String.IsNullOrEmpty(buffer))
+                {
+                    HttpRequest httpRequest = new HttpRequest(buffer);
                     startPos = buffer.IndexOf("HTTP", 1);
-                    string httpVersion = buffer.Substring(startPos, 8);
-                    request = buffer.Substring(0, startPos - 1);
-                    request.Replace("\\", "/");
-                    if ((request.IndexOf(".") < 1) && (!request.EndsWith("/")))
+                    if (startPos >= 0)
                     {
-                        request = request + "/";
-                    }
-
-                    startPos = request.LastIndexOf("/") + 1;
-                    requestedFile = request.Substring(startPos);
-                    dirName = request.Substring(request.IndexOf("/"), request.LastIndexOf("/") - 3);
-                    if (dirName.Equals("/"))
-                    {
-                        localDir = root;
-                    }
-                    else
-                    {
-                        localDir = string.Empty;
-                    }
-
-                    Console.WriteLine("Directory: " + localDir);
-                    if (localDir.Length == 0)
-                    {
-                        errorMessage = "<H2>Error!! Requested directory does not exist...</H2><BR>";
-                        SendHeader(httpVersion, string.Empty, errorMessage.Length, "HTTP 404 Not Found", ref socket);
-                        SendData(errorMessage, ref socket);
-                        socket.Close();
-                        continue;
-                    }
-
-                    // Check to make sure we have a valid file name.
-                    if (requestedFile.Length == 0)
-                    {
-                        if (string.IsNullOrEmpty(requestedFile))
+                        Console.WriteLine("Buffer: {0}", buffer);
+                        if (buffer.Substring(0, 3) != "GET")
                         {
-                            errorMessage = "404 Not Found";
-							
-                            SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
+                            LogInformation(new LogMessage(State.ERROR, "Not in GET format... " + buffer.ToString(), "HttpServer.StartListen"));
+                        }
+
+                        string httpVersion = buffer.Substring(startPos, 8);
+                        request = buffer.Substring(0, startPos - 1);
+                        request.Replace("\\", "/");
+                        if ((request.IndexOf(".") < 1) && (!request.EndsWith("/")))
+                        {
+                            request = request + "/";
+                        }
+
+                        startPos = request.LastIndexOf("/") + 1;
+                        requestedFile = request.Substring(startPos);
+                        dirName = request.Substring(request.IndexOf("/"), request.LastIndexOf("/") - 3);
+                        if (dirName.Equals("/"))
+                        {
+                            localDir = root;
+                        }
+                        else
+                        {
+                            localDir = string.Empty;
+                        }
+
+                        Console.WriteLine("Directory: " + localDir);
+
+                        // Invalid directory.
+                        if (localDir.Length == 0)
+                        {
+                            errorMessage = "<H2>Error!! You didn't request anything...<BR>Scooby Doo and the gang can't really help you out ... <BR>I don't think anyone can help you with your level of stupidity.</H2><BR>";
+                            SendHeader(httpVersion, string.Empty, errorMessage.Length, "HTTP 404 Not Found", ref socket);
                             SendData(errorMessage, ref socket);
                             socket.Close();
-                            continue;
+                            break;
                         }
-                    }
 
-                    string mimeType = GetMimeType(requestedFile);
-                    physicalFilePath = localDir + requestedFile;
-                    if (File.Exists(physicalFilePath) == false)
-                    {
-                        errorMessage = "404 Not Found";
-						if(File.Exists(RootDirectory + "404.html")) 
-						{
-							errorMessage = File.ReadAllText(RootDirectory+"404.html");
-						}
-						SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
-                        SendData(errorMessage, ref socket);
+                        // Check to make sure we have a valid file name.
+                        // Sends a 404 Not found error.
+                        if (requestedFile.Length == 0)
+                        {
+                            if (string.IsNullOrEmpty(requestedFile))
+                            {
+                                errorMessage = "<H2>The page " + requestedFile + " was not found...<BR>Don't worry, Scooby Doo and the gang are on the case!</H2><BR>";
+                                SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
+                                SendData(errorMessage, ref socket);
+                                socket.Close();
+                                break;
+                            }
+                        }
+
+                        string mimeType = GetMimeType(requestedFile);
+                        physicalFilePath = localDir + requestedFile;
+                        if (File.Exists(physicalFilePath) == false)
+                        {
+                            errorMessage = "<H2>The page " + requestedFile + " was not found...<BR>Don't worry, Scooby Doo and the gang are on the case!</H2><BR>";
+                            if (File.Exists(RootDirectory + "404.html"))
+                            {
+                                errorMessage = File.ReadAllText(RootDirectory + "404.html");
+                            }
+
+                            SendHeader(httpVersion, string.Empty, errorMessage.Length, " 404 Not Found", ref socket);
+                            SendData(errorMessage, ref socket);
+                        }
+                        else
+                        {
+                            int toBytes = 0;
+                            response = string.Empty;
+                            FileStream stream = new FileStream(physicalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            FileInfo fi = new FileInfo(physicalFilePath);
+                            DateTime lastWriteTime = fi.LastWriteTime;
+                            BinaryReader reader = new BinaryReader(stream);
+                            byte[] bytes = new byte[stream.Length];
+                            int read;
+                            while ((read = reader.Read(bytes, 0, bytes.Length)) != 0)
+                            {
+                                Console.WriteLine("Reading some bytes...");
+                                response = response + Encoding.ASCII.GetString(bytes, 0, read);
+                                toBytes = toBytes + read;
+                            }
+
+                            reader.Close();
+                            stream.Close();
+                            errorMessage = "200 OK";
+                            SendHeader(httpVersion, mimeType, toBytes, " 200 OK", ref socket);
+                            SendData(bytes, ref socket);
+                            //socket.Close();
+                        }
+
+                        startPos = buffer.IndexOf("Connection");
+                        if (buffer.Contains("Close") || buffer.Contains("close"))
+                        {
+                            socket.Close();
+                            Console.WriteLine("Closing the connection, because the browser told us so.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Keeping the connection open, because das browser told me so.");
+                        }
                     }
                     else
                     {
-                        int toBytes = 0;
-                        response = string.Empty;
-                        FileStream stream = new FileStream(physicalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        FileInfo fi = new FileInfo(physicalFilePath);
-                        DateTime lastWriteTime = fi.LastWriteTime;
-                        BinaryReader reader = new BinaryReader(stream);
-                        byte[] bytes = new byte[stream.Length];
-                        int read;
-                        while ((read = reader.Read(bytes, 0, bytes.Length)) != 0)
-                        {
-                            Console.WriteLine("Reading some bytes...");
-                            response = response + Encoding.ASCII.GetString(bytes, 0, read);
-                            toBytes = toBytes + read;
-                        }
-
-                        reader.Close();
-                        stream.Close();
-                        errorMessage = "200 OK";
-                        SendHeader(httpVersion, mimeType, toBytes, " 200 OK", ref socket);
-                        SendData(bytes, ref socket);
-                        socket.Close();
                     }
                 }
 
-                socket.Close();
-            }
+                Debug.WriteLine("Thread {0} is going to sleep...{1}", Thread.CurrentThread.ManagedThreadId, count);
+                Thread.Sleep(1000);
+                count++;
+            }        
         }
 
         /// <summary>
         /// Sends the header to our socket.
         /// Calls the more complex SendHeader function which includes a lastWriteTime.
         /// </summary>
-        /// <param name="httpVersion"></param>
-        /// <param name="mimeHeader"></param>
-        /// <param name="toBytes"></param>
-        /// <param name="statusCode"></param>
-        /// <param name="socket"></param>
+        /// <param name="httpVersion">HTTP version we are targetting.</param>
+        /// <param name="mimeHeader">Header for the MIME format.</param>
+        /// <param name="toBytes">Bytes ... as an int</param>
+        /// <param name="statusCode">Code to respond to the server: 404, 304, etc.</param>
+        /// <param name="socket">The socket used to send the response.</param>
         private void SendHeader(string httpVersion, string mimeHeader, int toBytes, string statusCode, ref Socket socket)
         {
             SendHeader(httpVersion, mimeHeader, toBytes, statusCode, ref socket, DateTime.Now);

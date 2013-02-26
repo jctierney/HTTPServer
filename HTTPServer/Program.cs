@@ -28,12 +28,8 @@ namespace HTTPServer
 			} 
 			catch (Exception e)
 			{
-				Console.WriteLine("ERROR! "+e.Message);
-			}
-			
-			
+				Console.WriteLine("ERROR\n\t"+e.Message);
+			}			
         }
-
-        
     }
 }
