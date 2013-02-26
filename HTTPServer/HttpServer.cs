@@ -119,7 +119,8 @@ namespace HTTPServer
             MimeTypes.Add(".html", "text/html"); // HTML files
             MimeTypes.Add(".htm", "text/html"); // HTM files
             MimeTypes.Add(".bmp", "image/bmp"); // Bitmaps
-            MimeTypes.Add(".jpg", "image/jpg"); // JPEG            
+            MimeTypes.Add(".jpg", "image/jpg"); // JPEG      
+            MimeTypes.Add(".pdf", "application/pdf");
             try
             {
                 Listener = new TcpListener(IPAddress.Any, Port);
@@ -127,7 +128,13 @@ namespace HTTPServer
                 Console.WriteLine("Server is running..." + Port);
 
                 Thread thread = new Thread(new ThreadStart(StartListen));
+                Thread thread2 = new Thread(new ThreadStart(StartListen));
+                Thread thread3 = new Thread(new ThreadStart(StartListen));
+                Thread thread4 = new Thread(new ThreadStart(StartListen));
                 thread.Start();
+                thread2.Start();
+                thread3.Start();
+                thread4.Start();
             }
             catch (Exception e)
             {
@@ -186,8 +193,6 @@ namespace HTTPServer
         /// <summary>
         /// Our basic listener.
         ///   - Sets up our root directory.
-        ///   - TODO: currently defaults to C:\\www\\ directory.
-        ///     Should make this non-static.
         /// </summary>
         private void StartListen()
         {
@@ -203,6 +208,7 @@ namespace HTTPServer
 			{
 				root = root + Path.DirectorySeparatorChar;
 			}
+
             string physicalFilePath = string.Empty;
             string formattedMessage = string.Empty;
             string response = string.Empty;
@@ -256,7 +262,6 @@ namespace HTTPServer
                     }
 
                     Console.WriteLine("Directory: " + localDir);
-
                     if (localDir.Length == 0)
                     {
                         errorMessage = "<H2>Error!! Requested directory does not exist...</H2><BR>";
@@ -285,7 +290,7 @@ namespace HTTPServer
                     if (File.Exists(physicalFilePath) == false)
                     {
                         errorMessage = "404 Not Found";
-						if(File.Exists(RootDirectory+"404.html")) 
+						if(File.Exists(RootDirectory + "404.html")) 
 						{
 							errorMessage = File.ReadAllText(RootDirectory+"404.html");
 						}
@@ -304,6 +309,7 @@ namespace HTTPServer
                         int read;
                         while ((read = reader.Read(bytes, 0, bytes.Length)) != 0)
                         {
+                            Console.WriteLine("Reading some bytes...");
                             response = response + Encoding.ASCII.GetString(bytes, 0, read);
                             toBytes = toBytes + read;
                         }
@@ -316,6 +322,8 @@ namespace HTTPServer
                         socket.Close();
                     }
                 }
+
+                socket.Close();
             }
         }
 
